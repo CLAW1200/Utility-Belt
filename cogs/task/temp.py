@@ -24,7 +24,6 @@ class CleanTemp(Cog):
                     shutil.rmtree(file_path)
                 else:
                     os.remove(file_path)
-        print (f"Cleaned temp/ directory at {now}")
 
     @cleaner.before_loop
     async def before_cleaner(self):
