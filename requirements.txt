@@ -1,0 +1,8 @@
+py-cord==2.6.1
+python-dotenv
+tortoise-orm
+jishaku==2.5.2
+gradio_client==0.14.0
+aiohttp
+bs4
+qrcode
