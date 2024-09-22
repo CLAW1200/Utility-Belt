@@ -115,6 +115,8 @@ class Bot(commands.Bot):
         )
 
     async def on_application_command(self, ctx: discord.ApplicationContext):
+        # print the command used in the console with the options
+        print(f"{ctx.author} ran {ctx.command} with options {ctx.options}")
         # find user in the database and add 1 to the commands_used for that user
         user = await UserModel.get_or_none(user_id=ctx.author.id)
         if user:
