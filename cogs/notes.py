@@ -82,7 +82,6 @@ class NoteSelect(discord.ui.Select):
 class Notes(Cog):
     """
     Notes commands
-    A users notes exist in a JSON object in a column in the UserModel table
     """
 
     @discord.slash_command(
