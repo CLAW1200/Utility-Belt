@@ -15,6 +15,7 @@ import dateutil.parser
 from os import getenv
 import aiohttp
 from difflib import SequenceMatcher
+import pint
 
 def convert_str_to_unix_time(string):
     # Parse the string into a time
@@ -217,8 +218,11 @@ def units_command(value: float, unit_from: str, unit_to: str):
 
     # Parse the units
     ureg = UnitRegistry()
-    unit_from = ureg(unit_from)
-    unit_to = ureg(unit_to)
+    try:
+        unit_from = ureg(unit_from)
+        unit_to = ureg(unit_to)
+    except pint.errors.UndefinedUnitError:
+        raise discord.errors.ApplicationCommandError("Invalid unit")
 
     # Perform the conversion
     converted_value = (value * unit_from.to(unit_to)).magnitude
