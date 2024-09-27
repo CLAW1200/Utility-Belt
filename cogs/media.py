@@ -1,12 +1,11 @@
 import discord
 import os
 from core import Cog, Context, utils
-from PIL import Image, ImageChops, UnidentifiedImageError
+from PIL import Image, ImageChops
 from tempfile import NamedTemporaryFile
 import aiohttp
-import re
-import hashlib
-from urllib.parse import unquote
+import json
+from requests.structures import CaseInsensitiveDict
 
 async def image_to_gif(image, url):
     """Convert an image from a URL to a gif and return it as a file path"""
@@ -37,71 +36,57 @@ async def speech_bubble(image, url, overlay_y):
         temp_image.seek(0)
         return discord.File(fp=temp_image.name)
     
-async def download_media(url, format, quality):
+async def download_media(url, download_mode, video_quality, audio_format):
     """Download media from a URL"""
-    api_url = "https://olly.imput.net/api/json"
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-        }
+
+    api_url = "https://kityune.imput.net/"
+    
+    headers = CaseInsensitiveDict()
+    headers["Accept"] = "application/json"
+    headers["Content-Type"] = "application/json"
+
     data = {
         "url": url,
-        "filenamePattern": "pretty",
-        "twitterGif": "true",
-        "youtubeVideoCodec": "h264",
-        "audioBitrate": "128",
-        }
+        "filenameStyle": "pretty",
+        "downloadMode" : str(download_mode),
+        "twitterGif": True,
+    }
     
-    if format == "auto":
-        data["downloadMode"] = "auto"
-        data["videoQuality"] = quality
-
+    data = json.dumps(data)
+    
     if format == "audio":
-        data["downloadMode"] = "audio"
-        data["audioFormat"] = quality
+        data["audioFormat"] = audio_format
+
+    if format == "auto":
+        data["videoQuality"] = video_quality
+        data["audioFormat"] = audio_format
 
     if format == "mute":
-        data["downloadMode"] = "mute"
-        data["videoQuality"] = quality
+        data["videoQuality"] = video_quality
+
+    print (headers)
+    print (data)
 
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(api_url, headers=headers, json=data) as response:
+        async with session.post(api_url, data=data, headers=headers) as response:
             if response.status != 200:
-                response_json = await response.json()
                 raise discord.errors.ApplicationCommandError(f"Invalid URL")
             response_json = await response.json()
             media_url = response_json.get("url")
+            media_filename = response_json.get("filename")
         
         async with session.get(media_url) as media:
-            media.raise_for_status()
-            content_disposition = media.headers.get("content-disposition")
-            if content_disposition:
-                # Check for encoded filename (RFC 5987)
-                match = re.search("filename\*=UTF-8''(.+)", content_disposition)
-                if match:
-                    # Decode the percent-encoded UTF-8 part and get file extension
-                    filename = unquote(match.group(1))
-                    file_ext = match.group(1).split(".")[-1]
-                else:
-                    # Fallback to regular expression if not encoded
-                    match = re.search('filename=(.+)', content_disposition)
-                    if match:
-                        filename = match.group(1)
-
-            else:
-                filename = hashlib.sha256(url.encode()).hexdigest()
-                file_ext = "mp4" # assume mp4 if no content-disposition
-                filename = filename + "." + file_ext
-
+            if media.status != 200:
+                raise discord.errors.ApplicationCommandError(f"Invalid media")
             media = await media.read()
 
     with NamedTemporaryFile(delete=False) as temp_media:
-        if filename[0] == '"':
-            filename = filename[1:]
+        if media_filename[0] == '"':
+            media_filename = media_filename[1:]
         temp_media.write(media)
         temp_media.seek(0)
-        return discord.File(fp=temp_media.name, filename=filename)
+        return discord.File(fp=temp_media.name, filename=media_filename)
 
 
 class Media(Cog):
@@ -173,13 +158,6 @@ class Media(Cog):
         await ctx.edit(content = f"", file=file)
         os.remove(file.fp.name)
 
-    async def get_quality_types(ctx: discord.AutocompleteContext):
-        format = ctx.options["format"]
-        if format == "audio":
-            return ["best", "mp3", "wav", "opus", "ogg"]
-        if format == "video":
-            return ["best", "144", "240", "360", "480", "720", "1080", "1440", "2160"]
-        
     @discord.slash_command(
         integration_types={
         discord.IntegrationType.guild_install,
@@ -203,21 +181,30 @@ class Media(Cog):
         default="auto",
     )
     @discord.option(
-        "quality",
+        "video_quality",
         description="The download quality",
         type=str,
-        autocomplete=discord.utils.basic_autocomplete(get_quality_types), 
+        choices=["best", "144", "240", "360", "480", "720", "1080", "1440", "2160"],
+        default="240",
+        required=False,
+    )
+    @discord.option(
+        "audio_format",
+        description="The audio format",
+        type=str,
+        choices=["best", "mp3", "wav", "opus", "ogg"],
+        default="mp3",
         required=False,
     )
 
-    async def download_media(self, ctx: Context, url: str, format: str, quality: str):
+    async def download_media(self, ctx: Context, url: str, format: str, video_quality: str, audio_format: str):
         """Download media from a URL using download_media"""
         try:
             url_short = url.split('/')[2]
         except IndexError:
             url_short = url
         await ctx.respond(content = f"Downloading media from {url_short} {self.bot.get_emojis('loading_emoji')}")
-        file = await download_media(url, format, quality) # discord file object
+        file = await download_media(url, format, video_quality, audio_format)
         await ctx.edit(content = f"", file=file)
         os.remove(str(file.fp.name))
 
