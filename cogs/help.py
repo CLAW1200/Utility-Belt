@@ -62,8 +62,8 @@ class Help(Cog):
         embed.add_field(name="Server Count", value=str(len(self.bot.guilds)))
         embed.add_field(
             name="Member Count",
-            # value=str(sum(guild.member_count for guild in self.bot.guilds)),
-            value=str(len(self.bot.users)),
+            value=str(sum(guild.member_count for guild in self.bot.guilds)),
+            #value=str(len(self.bot.users)),
         )
         embed.add_field(name="Ping", value=f"{self.bot.latency*1000:.2f}ms")
 
