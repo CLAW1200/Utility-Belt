@@ -1,15 +1,11 @@
 from discord import DiscordException
 from discord.ext import commands
-
 from typing import Any, Literal
 import io
 import aiohttp
 from PIL import Image, UnidentifiedImageError
 from bs4 import BeautifulSoup as bs
-
-import csv
-import json
-import os
+import discord
 import datetime
 from datetime import timedelta
 from core import models
@@ -82,8 +78,8 @@ async def image_or_url(image, url):
                     except UnicodeDecodeError:
                         return Image.open(io.BytesIO(await response.read()))
         except UnidentifiedImageError:
-            raise ValueError("Invalid image")
-        raise ValueError("No image or URL provided")
+            raise discord.errors.ApplicationCommandError("Invalid image")
+        raise discord.errors.ApplicationCommandError("No image or URL provided")
 
 async def log_data(bot):
     # get stats
