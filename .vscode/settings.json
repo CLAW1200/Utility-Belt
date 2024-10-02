@@ -3,6 +3,8 @@
         "aiofiles",
         "aiohttp",
         "artstation",
+        "atbash",
+        "blurple",
         "godrays",
         "Gradio",
         "Hyperdetailed",
@@ -10,6 +12,7 @@
         "jishaku",
         "peepee",
         "speechbubble",
+        "vigenere",
         "wavetracing",
         "wordblacklist"
     ]
