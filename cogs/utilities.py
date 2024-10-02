@@ -214,7 +214,7 @@ def hex_to_text(message):
     except ValueError:
         return None
     
-def units_command(value: float, unit_from: str, unit_to: str):
+def unit_conversion(value: float, unit_from: str, unit_to: str):
 
     # Parse the units
     ureg = UnitRegistry()
@@ -361,7 +361,7 @@ class Utilities(Cog):
         type=str,
         required=False
     )
-    async def decode(self, ctx: Context, message: str, mode: str, key: str = None):
+    async def decode_command(self, ctx: Context, message: str, mode: str, key: str = None):
         """Decode a message using a cipher"""
         await ctx.defer()
         await ctx.respond(content = f"Decoding message using {mode} cipher {self.bot.get_emojis('loading_emoji')}")
@@ -418,7 +418,7 @@ class Utilities(Cog):
         type=str,
         required=False
     )
-    async def encode(self, ctx: Context, message: str, mode: str, key: str = None):
+    async def encode_command(self, ctx: Context, message: str, mode: str, key: str = None):
         """Encode a message using a cipher"""
         await ctx.defer()
         await ctx.respond(content = f"Encoding message using {mode} cipher {self.bot.get_emojis('loading_emoji')}")
@@ -473,11 +473,11 @@ class Utilities(Cog):
         required=True
     )
 
-    async def units(self, ctx: Context, value: float, unit_from: str, unit_to: str):
+    async def units_command(self, ctx: Context, value: float, unit_from: str, unit_to: str):
         """Convert one unit to another"""
         await ctx.defer()
         await ctx.respond(content = f"Converting {value} {unit_from} to {unit_to} {self.bot.get_emojis('loading_emoji')}")
-        converted_value, unit_from, unit_to = units_command(value, unit_from, unit_to)
+        converted_value, unit_from, unit_to = unit_conversion(value, unit_from, unit_to)
         embed = discord.Embed(
             title="Unit Conversion",
             description=f"{value} {unit_from} is equal to {converted_value} {unit_to}",
@@ -512,7 +512,7 @@ class Utilities(Cog):
         default="text"
     )
 
-    async def qr_code(self, ctx: Context, text: str, output: str = "image"):
+    async def qr_code_command(self, ctx: Context, text: str, output: str = "image"):
         await ctx.defer()
         await ctx.respond(content = f"Generating QR code {self.bot.get_emojis('loading_emoji')}")
         if output == "image":
@@ -544,7 +544,7 @@ class Utilities(Cog):
         required=True,
         choices=["relative", "short time", "long time", "short date", "long date", "long date with short time", "long date with day of the week"]
     )
-    async def timestamp(self, ctx: Context, time_string: str = None, format: str = "relative"):
+    async def timestamp_command(self, ctx: Context, time_string: str = None, format: str = "relative"):
         await ctx.defer()
         await ctx.respond(content = f"Converting timestamp to a readable format {self.bot.get_emojis('loading_emoji')}")
         converted_timestamp = await timecode_convert(time_string, format)

@@ -4,7 +4,8 @@ import concurrent.futures
 import random
 from gradio_client import Client as GradioClient
 import asyncio
-import os 
+import os
+
 def ai_image_gen(prompt, enhancer, img2img, img_seed, img_strength, img_steps): # blocking function
     if prompt == None:
         prompt = "Joe Biden Falling off a Bike"
@@ -121,7 +122,7 @@ class Ai(Cog):
         required=False,
         default=3,
     )
-    async def ai_image_gen(self, ctx: Context, prompt: str = None, enhancer: str = "None", img2img: str = None, seed: int = None, strength: int = 0.7, steps: int = 3):
+    async def ai_image_gen_command(self, ctx: Context, prompt: str = None, enhancer: str = "None", img2img: str = None, seed: int = None, strength: int = 0.7, steps: int = 3):
         """AI generate an image with SDXLTurbo using ai_image_gen"""
         await ctx.defer()
         await ctx.respond(content = f"Generating image with SDXLTurbo {self.bot.get_emojis('loading_emoji')}")

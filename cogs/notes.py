@@ -103,7 +103,7 @@ class Notes(Cog):
         type=str
     )
 
-    async def note_command(self, ctx: Context, note_title: str, note_content: str):
+    async def note_write_command(self, ctx: Context, note_title: str, note_content: str):
         """Write a note"""
         await ctx.defer()
         await note_write(ctx, note_title, note_content)
