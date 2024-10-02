@@ -64,14 +64,14 @@ async def download_media(url, download_mode, video_quality, audio_format):
     if format == "mute":
         data["videoQuality"] = video_quality
 
-    print (headers)
-    print (data)
+    # print (headers)
+    # print (data)
 
 
     async with aiohttp.ClientSession() as session:
         async with session.post(api_url, data=data, headers=headers) as response:
             if response.status != 200:
-                raise response.raise_for_status()
+                raise discord.errors.ApplicationCommandError(f"Failed to download media from {url}\nError code: {response.status}")
             response_json = await response.json()
             media_url = response_json.get("url")
             media_filename = response_json.get("filename")
