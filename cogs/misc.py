@@ -7,7 +7,7 @@ import random
 class Misc(Cog):
     """Miscellaneous commands"""
 
-    def peepee_command(self, user: discord.User):
+    def peepee(self, user: discord.User):
         peepeeSize = int(hashlib.sha256(str(user.id).encode()).hexdigest(), 16) % 20 # get a random number between 0 and 19
         peepee = "8" + "=" * peepeeSize + "D"
         return peepee
@@ -32,12 +32,12 @@ class Misc(Cog):
         type=discord.User,
         required=False
     )
-    async def peepee(self, ctx: Context, user: discord.User):
+    async def peepee_command(self, ctx: Context, user: discord.User):
         """Get the size of your peepee"""
         await ctx.defer()
         if user == None:
             user = ctx.author
-        await ctx.respond(content = f"{user.mention} has a size of {self.peepee_command(user)}")
+        await ctx.respond(content = f"{user.mention} has a size of {self.peepee(user)}")
 
     @discord.slash_command(
         integration_types={
@@ -46,7 +46,7 @@ class Misc(Cog):
         name="find-a-friend",
         description="Find a friend"
     )
-    async def find_a_friend(self, ctx: Context):
+    async def find_a_friend_command(self, ctx: Context):
         """Find a friend"""
         await ctx.defer()
         await ctx.respond(content = f"Your friend is {self.get_random_user(ctx).mention}")

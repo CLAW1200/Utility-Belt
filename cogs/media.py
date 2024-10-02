@@ -112,7 +112,7 @@ class Media(Cog):
         type=discord.Attachment,
         required=False
     )
-    async def image_to_gif(self, ctx: Context, image: discord.Attachment = None, url: str = None):
+    async def image_to_gif_command(self, ctx: Context, image: discord.Attachment = None, url: str = None):
         """Convert an image to a gif using image_to_gif"""
         await ctx.respond(content = f"Converting image to gif {self.bot.get_emojis('loading_emoji')}")
         if not image and not url:
@@ -149,7 +149,7 @@ class Media(Cog):
         required=False,
         default=2
     )
-    async def speech_bubble(self, ctx: Context, image: discord.Attachment = None, url: str = None, overlay_y: float = 0.5):
+    async def speech_bubble_command(self, ctx: Context, image: discord.Attachment = None, url: str = None, overlay_y: int = 2):
         """Add a speech bubble to an image using speech_bubble"""
         await ctx.respond(content = f"Adding speech bubble to image {self.bot.get_emojis('loading_emoji')}")
         if not image and not url:
@@ -199,7 +199,7 @@ class Media(Cog):
         required=False,
     )
 
-    async def download_media(self, ctx: Context, url: str, format: str, video_quality: str, audio_format: str):
+    async def download_media_command(self, ctx: Context, url: str, format: str, video_quality: str, audio_format: str):
         """Download media from a URL using download_media"""
         try:
             url_short = url.split('/')[2]
