@@ -61,7 +61,7 @@ class Bot(commands.Bot):
             else None
         )
         # get the bot data from the database
-        bot_data = await BotModel.get_bot_data()
+        bot_data = await BotModel.get_bot_presence()
         if bot_data and bot_data['presence']:
             activity = discord.Activity(
                 type=discord.ActivityType.watching,

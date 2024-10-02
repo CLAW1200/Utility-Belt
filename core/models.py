@@ -14,7 +14,7 @@ class BotModel(Model):
     presence_text = fields.CharField(max_length=100)
 
     @classmethod
-    async def get_bot_data(cls) -> dict:
+    async def get_bot_presence(cls) -> dict:
         # method to get the bot presence
         return {
             "presence": (bot_data := await cls.all().first()) and {
