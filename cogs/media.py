@@ -23,7 +23,7 @@ async def speech_bubble(image, url, overlay_y):
     image = await utils.image_or_url(image, url)
     image = image.convert("RGBA")
 
-    overlay = overlay.resize((image.width, int(image.height * overlay_y)))
+    overlay = overlay.resize((image.width, int(image.height * (overlay_y / 10))))
 
     output = Image.new("RGBA", image.size)
     output.paste(overlay, (0, 0), overlay)
@@ -71,14 +71,14 @@ async def download_media(url, download_mode, video_quality, audio_format):
     async with aiohttp.ClientSession() as session:
         async with session.post(api_url, data=data, headers=headers) as response:
             if response.status != 200:
-                raise discord.errors.ApplicationCommandError(f"Invalid URL")
+                raise response.raise_for_status()
             response_json = await response.json()
             media_url = response_json.get("url")
             media_filename = response_json.get("filename")
         
         async with session.get(media_url) as media:
             if media.status != 200:
-                raise discord.errors.ApplicationCommandError(f"Invalid media")
+                raise media.raise_for_status()
             media = await media.read()
 
     with NamedTemporaryFile(delete=False) as temp_media:
@@ -145,15 +145,17 @@ class Media(Cog):
     @discord.option(
         "overlay_y",
         description="The height of the speech bubble overlay",
-        type=float,
+        type=int,
         required=False,
-        default=0.2
+        default=2
     )
     async def speech_bubble(self, ctx: Context, image: discord.Attachment = None, url: str = None, overlay_y: float = 0.5):
         """Add a speech bubble to an image using speech_bubble"""
         await ctx.respond(content = f"Adding speech bubble to image {self.bot.get_emojis('loading_emoji')}")
         if not image and not url:
             raise discord.errors.ApplicationCommandError("No image or URL provided")
+        if overlay_y <= 0 or overlay_y > 10:
+            raise discord.errors.ApplicationCommandError("Overlay y must be between 0 and 10")
         file = await speech_bubble(image, url, overlay_y)
         await ctx.edit(content = f"", file=file)
         os.remove(file.fp.name)

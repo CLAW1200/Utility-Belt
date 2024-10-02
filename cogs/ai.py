@@ -109,7 +109,7 @@ class Ai(Cog):
     @discord.option(
         "strength",
         description="The strength of the image",
-        type=int,
+        type=float,
         required=False,
         default=0.7,
     )
