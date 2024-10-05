@@ -39,17 +39,5 @@ class Misc(Cog):
             user = ctx.author
         await ctx.respond(content = f"{user.mention} has a size of {self.peepee(user)}")
 
-    @discord.slash_command(
-        integration_types={
-        discord.IntegrationType.guild_install,
-        },
-        name="find-a-friend",
-        description="Find a friend"
-    )
-    async def find_a_friend_command(self, ctx: Context):
-        """Find a friend"""
-        await ctx.defer()
-        await ctx.respond(content = f"Your friend is {self.get_random_user(ctx).mention}")
-
 def setup(bot):
     bot.add_cog(Misc(bot))
