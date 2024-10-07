@@ -24,6 +24,15 @@ class CleanTemp(Cog):
                     shutil.rmtree(file_path)
                 else:
                     os.remove(file_path)
+        for file in os.listdir("/tmp/"):
+            if file.startswith("utilitybelt_"):
+                file_path = os.path.join("/tmp/", file)
+                file_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
+                if (now - file_time).seconds > 300:
+                    if os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
+                    else:
+                        os.remove(file_path)
 
     @cleaner.before_loop
     async def before_cleaner(self):
