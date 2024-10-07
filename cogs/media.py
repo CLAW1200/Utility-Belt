@@ -10,7 +10,7 @@ from requests.structures import CaseInsensitiveDict
 async def image_to_gif(image, url):
     """Convert an image from a URL to a gif and return it as a file path"""
     image = await utils.image_or_url(image, url)
-    with NamedTemporaryFile(suffix=".gif", delete=False) as temp_gif:
+    with NamedTemporaryFile(prefix="utilitybelt_", suffix=".gif", delete=False) as temp_gif:
         image.save(temp_gif, format="PNG", save_all=True, append_images=[image])
         temp_gif.seek(0)
         return discord.File(fp=temp_gif.name)
@@ -31,7 +31,7 @@ async def speech_bubble(image, url, overlay_y):
     frame = ImageChops.composite(output, image, output)
     frame = ImageChops.subtract(image, output)
     
-    with NamedTemporaryFile(suffix=".gif", delete=False) as temp_image:
+    with NamedTemporaryFile(prefix="utilitybelt_",  suffix=".gif", delete=False) as temp_image:
         frame.save(temp_image, format="GIF")
         temp_image.seek(0)
         return discord.File(fp=temp_image.name)
@@ -77,7 +77,7 @@ async def download_media(url, download_mode, video_quality, audio_format):
                 raise media.raise_for_status()
             media = await media.read()
 
-    with NamedTemporaryFile(delete=False) as temp_media:
+    with NamedTemporaryFile(delete=False, prefix="utilitybelt_") as temp_media:
         if media_filename[0] == '"':
             media_filename = media_filename[1:]
         temp_media.write(media)
