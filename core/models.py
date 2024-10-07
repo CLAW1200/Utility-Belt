@@ -83,6 +83,17 @@ class UserModel(Model):
             }
         }
     
+    @classmethod
+    async def get_top_users(cls) -> list:
+        # method to get the top users
+        return [
+            {
+                "user_id": user.user_id,
+                "commands_used": user.commands_used
+            }
+            for user in await cls.all().order_by("-commands_used").limit(25)
+        ]
+    
     class Meta:
         # metadata for the model
         table = "user"
