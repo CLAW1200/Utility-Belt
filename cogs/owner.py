@@ -2,9 +2,9 @@ from discord.ext.commands import command
 from jishaku.codeblocks import codeblock_converter
 from jishaku.modules import ExtensionConverter
 import discord
-import json
 from core import Cog, models
 from core import utils
+import aiohttp
 
 class Owner(Cog, command_attrs={"hidden": True}):
     def __init__(self, bot) -> None:
@@ -66,6 +66,26 @@ class Owner(Cog, command_attrs={"hidden": True}):
 
     async def cog_check(self, ctx):
         return ctx.author.id in self.bot.owner_ids
+    
+    @command()
+    async def cobalt(self, ctx):
+        # check cobalt status on port 9000
+        async with aiohttp.ClientSession() as session:
+            async with session.get("http://localhost:9000/") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    try:
+                        cobalt = data['cobalt']
+                    except KeyError:
+                        await ctx.reply("Cobalt is offline.")
+                        return
+                    try:
+                        version = cobalt['version']
+                    except KeyError:
+                        version = "Unknown"
+                    await ctx.reply(f"Cobalt is running on version `{version}`")
+                else:
+                    await ctx.reply("Cobalt is offline.")
 
 def setup(bot):
     bot.add_cog(Owner(bot))

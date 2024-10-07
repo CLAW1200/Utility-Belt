@@ -3,6 +3,7 @@ from discord.utils import utcnow
 from core import Cog, Context
 import hashlib
 import random
+from core import models
 
 class Misc(Cog):
     """Miscellaneous commands"""
@@ -19,6 +20,11 @@ class Misc(Cog):
         else:
             return random_user
         
+    async def get_leaderboard_stats(self):
+        user_data_list = await models.UserModel.get_top_users()
+        return user_data_list
+    
+    
     @discord.slash_command(
         integration_types={
         discord.IntegrationType.guild_install,
@@ -38,6 +44,37 @@ class Misc(Cog):
         if user == None:
             user = ctx.author
         await ctx.respond(content = f"{user.mention} has a size of {self.peepee(user)}")
+
+
+    @discord.slash_command(
+        integration_types={
+        discord.IntegrationType.guild_install,
+        discord.IntegrationType.user_install,
+        },
+        name="leaderboard",
+        description="Get the leaderboard"
+    )
+    
+    async def leaderboard_command(self, ctx: Context):
+        """Get the leaderboard"""
+        await ctx.defer()
+        user_data_list = await self.get_leaderboard_stats()
+        embed = discord.Embed(title="Leaderboard", color=discord.Color.green())
+        rank = 0
+        for user_dict in user_data_list:
+            if rank > 4:
+                break
+            # for the 1st place, set the image to the user's avatar on the side
+            user = await self.bot.get_or_fetch_user(user_dict["user_id"]) # get the user object
+            if user == None or user.bot or (user.id in self.bot.owner_ids):
+                continue
+            if rank == 0:
+                embed.set_thumbnail(url = user.avatar.url)
+            embed.add_field(name=f"#{rank + 1} {user.global_name}", value=f"Commands used: {user_dict['commands_used']}", inline=False)
+            rank = rank + 1
+
+        embed.set_footer(text=f"Stats as of {utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
+        await ctx.respond(embed=embed)
 
 def setup(bot):
     bot.add_cog(Misc(bot))
