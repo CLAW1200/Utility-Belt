@@ -66,7 +66,11 @@ async def download_media(url, download_mode, video_quality, audio_format):
 
     async with aiohttp.ClientSession() as session:
         async with session.post(api_url, data=data, headers=headers) as response:
-            if response.status != 200:
+            if response.status == 400:
+                raise discord.errors.ApplicationCommandError("Bad request.\nCheck if the URL is valid and if the site is supported.")
+            elif response.status == 429:
+                raise discord.errors.ApplicationCommandError("Too many requests.\nTry again later.")
+            elif response.status != 200:
                 response.raise_for_status()
             response_json = await response.json()
             media_url = response_json.get("url")
