@@ -101,8 +101,18 @@ class Bot(commands.Bot):
                 header = f"Command: `/{ctx.command.qualified_name}`"
                 if ctx.guild is not None:
                     header += f" | Guild: `{ctx.guild.name} ({ctx.guild_id})`"
+                
+                # Add command options to the error message
+                options = []
+                for option in ctx.interaction.data.get('options', []):
+                    if isinstance(option, dict):
+                        options.append(f"{option.get('name')}: {option.get('value')}")
+                    elif isinstance(option, str):
+                        options.append(option)
+                options_str = " | ".join(options)
+                
                 return await self.errors_webhook.send(
-                    f"{header}\n```\n{''.join(format_exception(type(error), error, error.__traceback__))}```"
+                    f"{header}\nOptions: `{options_str}`\n```\n{''.join(format_exception(type(error), error, error.__traceback__))}```"
                 )
         await ctx.edit(
             content="",
