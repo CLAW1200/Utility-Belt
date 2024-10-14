@@ -53,7 +53,7 @@ class NoteSelect(discord.ui.Select):
             options=[
                 discord.SelectOption(
                     label=note[0], # Title
-                    description=note[1]
+                    description=note[1][:100]
                 )
                 for note in notes
             ],
