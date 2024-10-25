@@ -35,17 +35,17 @@ class Owner(Cog, command_attrs={"hidden": True}):
 
     @command()
     # set bot status in the format of {presence_text}
-    async def presence(self, ctx, presence_text: str):
+    async def presence(self, ctx, *, presence_text: str):
 
         await models.BotModel.update_or_create(
             {"presence_text": presence_text}
         )
         await self.bot.change_presence(
-            activity=discord.Activity(
-                type=discord.ActivityType.watching, name=presence_text
+            activity=discord.CustomActivity(
+                name=presence_text
             )
         )
-        await ctx.reply(f"Presence updated to `watching {presence_text}`")
+        await ctx.reply(f"Presence updated to `{presence_text}`")
 
     @command(aliases=["percent"])
     # the percentage of users who have used a bot command (check if commandsUsed exists for each user)
