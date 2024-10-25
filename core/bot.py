@@ -63,9 +63,8 @@ class Bot(commands.Bot):
         # get the bot data from the database
         bot_data = await BotModel.get_bot_presence()
         if bot_data and bot_data['presence']:
-            activity = discord.Activity(
-                type=discord.ActivityType.watching,
-                name=bot_data['presence']['presence_text'],
+            activity = discord.CustomActivity(
+                name=bot_data['presence']['presence_text']
             )
             await self.change_presence(activity=activity)
             print (f"Presence updated to watching {bot_data['presence']['presence_text']}")
