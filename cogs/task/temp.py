@@ -14,12 +14,20 @@ class CleanTemp(Cog):
     
     @tasks.loop(seconds=(300))
     async def cleaner(self):
+        remove_after = 150
         now = datetime.datetime.now()
+
+        for dir in os.listdir("/tmp/"): # this is not great, but Gradio keeps making extra directories without an explanation!!
+            dir_time = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join("/tmp/", dir)))
+            # find all empty directories that are 40 chars long
+            if len(dir) == 40 and os.path.isdir(os.path.join("/tmp/", dir)) and (now - dir_time).seconds > remove_after:
+                shutil.rmtree(os.path.join("/tmp/", dir))
+
         for file in os.listdir("/tmp/"):
             if file.startswith("utilitybelt_"):
                 file_path = os.path.join("/tmp/", file)
                 file_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
-                if (now - file_time).seconds > 300:
+                if (now - file_time).seconds > remove_after:
                     if os.path.isdir(file_path):
                         shutil.rmtree(file_path)
                     else:
