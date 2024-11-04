@@ -95,7 +95,7 @@ async def upload_to_catbox(file): # pass a discord.File object
     file_type = file.filename.split(".")[-1]
     data = aiohttp.FormData()
     data.add_field("reqtype", "fileupload")
-    data.add_field("time", "1h")
+    data.add_field("time", "72h")
     data.add_field("fileToUpload", file_raw, filename="file.{}".format(file_type))
     async with aiohttp.ClientSession() as session:
         async def post(data) -> str:
