@@ -130,6 +130,9 @@ class Ai(Cog):
         file = await (unblocked_ai_image_gen(executor, prompt, enhancer, img2img, seed, strength, steps))
         await ctx.edit(content = f"", file=file)
         os.remove(file.fp.name)
+        # also remove the parent directory of the file if it is empty
+        os.rmdir(os.path.dirname(file.fp.name))
+        
 
 
 def setup(bot):
