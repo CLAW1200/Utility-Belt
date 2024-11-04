@@ -228,9 +228,17 @@ class Media(Cog):
         try:
             await ctx.edit(content = f"", file=file)
         except discord.errors.HTTPException:
-            await ctx.edit(content = f"Downloaded media is too big for discord, uploading to litterbox.catbox.moe instead {self.bot.get_emojis('loading_emoji')}")
+            await ctx.edit(content = f"Media is too big for discord, uploading to litterbox.catbox.moe instead {self.bot.get_emojis('loading_emoji')}")
             catbox_link = await upload_to_catbox(file)
-            await ctx.edit(content = f"{catbox_link}")
+            # get timestamp of 3 days from now in unix timestamp
+            import datetime
+
+            timestamp = datetime.datetime.now() + datetime.timedelta(days=3)
+            timestamp = int(timestamp.timestamp())
+            timestamp = str(f"<t:{timestamp}:R>")
+
+
+            await ctx.edit(content = f"Link expirers in {timestamp} {catbox_link}")
         os.remove(str(file.fp.name))
 
 def setup(bot):
