@@ -109,10 +109,17 @@ class Bot(commands.Bot):
                     elif isinstance(option, str):
                         options.append(option)
                 options_str = " | ".join(options)
+
+                #put error into file and send it to the webhook
+                with open("lastError.log", "w") as f:
+                    # ```\n{''.join(format_exception(type(error), error, error.__traceback__))}```
+                    f.write(f"{header}\nOptions: `{options_str}`\n{''.join(format_exception(type(error), error, error.__traceback__))}")
                 
                 return await self.errors_webhook.send(
-                    f"{header}\nOptions: `{options_str}`\n```\n{''.join(format_exception(type(error), error, error.__traceback__))}```"
+                    f"{header}\nOptions: `{options_str}`\n",
+                    file=discord.File("lastError.log"),
                 )
+            
         await ctx.edit(
             content="",
             embed=discord.Embed(
