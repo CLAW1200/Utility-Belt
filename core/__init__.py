@@ -1,5 +1,5 @@
+# "real men test in production"
 from discord.ext import commands
-
 from .bot import Bot
 from .context import Context
 from .utils import Lowercase, humanize_time, s, list_items
