@@ -6,6 +6,8 @@ from tempfile import NamedTemporaryFile
 import aiohttp
 import json
 from requests.structures import CaseInsensitiveDict
+import datetime
+import yarl
 
 async def image_to_gif(image, url):
     """Convert an image from a URL to a gif and return it as a file path"""
@@ -63,11 +65,11 @@ async def download_media(url, download_mode, video_quality, audio_format):
 
     if format == "mute":
         data["videoQuality"] = video_quality
-
+    
     async with aiohttp.ClientSession() as session:
         async with session.post(api_url, data=data, headers=headers) as response:
             if response.status == 400:
-                raise discord.errors.ApplicationCommandError("Bad request.\nCheck if the URL is valid and if the site is supported.")
+                raise discord.errors.ApplicationCommandError("## IMPORTANT: If you are having issues with YouTube, please read [this post](https://discord.gg/SpBUGEzmn8)\nBad request.\nCheck if the URL is valid and if the site is supported.\n")
             elif response.status == 429:
                 raise discord.errors.ApplicationCommandError("Too many requests.\nTry again later.")
             elif response.status != 200:
@@ -75,20 +77,20 @@ async def download_media(url, download_mode, video_quality, audio_format):
             response_json = await response.json()
             media_url = response_json.get("url")
             media_filename = response_json.get("filename")
-        
-        async with session.get(media_url) as media:
+            media_url = yarl.URL(media_url, encoded=True)
+    
+        async with session.get(media_url, headers=headers) as media:
             if media.status != 200:
                 raise media.raise_for_status()
-            media = await media.read()
-
+            media_content = await media.read()
+    
     with NamedTemporaryFile(delete=False, prefix="utilitybelt_") as temp_media:
         if media_filename[0] == '"':
             media_filename = media_filename[1:]
-        temp_media.write(media)
+        temp_media.write(media_content)
         temp_media.seek(0)
         return discord.File(fp=temp_media.name, filename=media_filename)
     
-
 async def upload_to_catbox(file): # pass a discord.File object
     """Upload media to catbox.moe with curl and return the URL"""
     file_raw = open(file.fp.name, "rb")
@@ -231,12 +233,10 @@ class Media(Cog):
             await ctx.edit(content = f"Media is too big for discord, uploading to litterbox.catbox.moe instead {self.bot.get_emojis('loading_emoji')}")
             catbox_link = await upload_to_catbox(file)
             # get timestamp of 3 days from now in unix timestamp
-            import datetime
-
+            
             timestamp = datetime.datetime.now() + datetime.timedelta(days=3)
             timestamp = int(timestamp.timestamp())
             timestamp = str(f"<t:{timestamp}:R>")
-
 
             await ctx.edit(content = f"Link expirers in {timestamp} {catbox_link}")
         os.remove(str(file.fp.name))
