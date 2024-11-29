@@ -20,7 +20,7 @@ class Birthday(Cog):
         created_at = bot.user.created_at
         today = datetime.datetime.now()
         if created_at.day == today.day and created_at.month == today.month:
-            await bot.change_presence(activity=discord.CustomActivity(name=f"{today.year - created_at.year} years of helping servers!"))
+            await bot.change_presence(activity=discord.CustomActivity(name=f"{today.year - created_at.year} years of service! 🎉"))
 
     @birthday.before_loop
     async def before_birthday(self):
