@@ -5,6 +5,9 @@ import discord
 from core import Cog, models
 from core import utils
 import aiohttp
+import subprocess
+import os
+import sys
 
 class Owner(Cog, command_attrs={"hidden": True}):
     def __init__(self, bot) -> None:
@@ -27,6 +30,11 @@ class Owner(Cog, command_attrs={"hidden": True}):
     async def shutdown(self, ctx):
         await ctx.send("Shutting down.")
         await self.bot.close()
+
+    @command()
+    async def restart(self, ctx):
+        await ctx.send("Restarting.")
+        os.execv(sys.executable, ['python'] + sys.argv)
 
     @command()
     async def pull(self, ctx, *to_load: ExtensionConverter):
@@ -86,6 +94,15 @@ class Owner(Cog, command_attrs={"hidden": True}):
                     await ctx.reply(f"Cobalt is running on version `{version}`")
                 else:
                     await ctx.reply("Cobalt is offline.")
+
+    @command()
+    async def ytdlp(self, ctx):
+        # pip upgrade yt-dlp package
+        sys = subprocess.run(["python3", "-m", "pip", "install", "--upgrade", "yt-dlp"])
+        if sys.returncode == 0:
+            await ctx.reply("yt-dlp upgraded successfully.\nRestart the bot to apply changes.")
+        else:
+            await ctx.reply("yt-dlp upgrade failed.")
 
 def setup(bot):
     bot.add_cog(Owner(bot))
