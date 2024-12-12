@@ -57,28 +57,20 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
         "cookiefile": "youtube.cookies",
     }
 
+    # default options
+    if video_quality == "auto":
+        video_quality = "360"
+    if audio_format == "auto":
+        audio_format = "mp3"
+
+    
+    if download_mode == "audio":
+        ytdl_options["format"] = f"bestaudio[ext={audio_format}]/bestaudio/best"
+
     if download_mode == "auto":
-        if video_quality != "auto":
-            ytdl_options["format"] = f"bestvideo[height<={video_quality}]+bestaudio/best[height<={video_quality}]"
-        else:
-            ytdl_options["format"] = f"bestvideo+bestaudio/best"
-        ytdl_options["postprocessors"] = [{
-            "key": "FFmpegVideoConvertor",
-            "preferedformat": "mp4"
-        }]
-    elif download_mode == "audio":
-        ytdl_options["format"] = f"bestaudio/best"
-        ytdl_options["postprocessors"] = [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": audio_format,
-            "preferredquality": "320"
-        }]
-    elif download_mode == "mute":
-        ytdl_options["format"] = f"bestvideo[height<={video_quality}]"
-        ytdl_options["postprocessors"] = [{
-            "key": "FFmpegVideoConvertor",
-            "preferedformat": "mp4"
-        }]
+        ytdl_options["format"] = f"bestvideo[height<={video_quality}]+bestaudio/best[height<={video_quality}]/best"
+
+    # no longer supporting "mute" mode
 
     ytdl = yt_dlp.YoutubeDL(ytdl_options)
 
@@ -89,13 +81,15 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
         partial(ytdl.extract_info, url, download=True)
     )
     
-    # Get the filepath after post-processing
-    if download_mode == "audio":
-        # For audio, extension will be changed to the requested format
-        filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + f".{audio_format}"
-    else:
-        # For video, extension will be mp4
-        filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + ".mp4"
+    filepath = ytdl.prepare_filename(info)
+
+    # # Get the filepath after post-processing
+    # if download_mode == "audio":
+    #     # For audio, extension will be changed to the requested format
+    #     filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + f".{audio_format}"
+    # else:
+    #     # For video, extension will be mp4
+    #     filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + ".mp4"
 
     return discord.File(fp=filepath)
 
@@ -262,7 +256,7 @@ class Media(Cog):
         "format",
         description="The type of media to download",
         type=str,
-        choices=["audio", "auto", "mute"],
+        choices=["auto", "audio"],
         required=False,
         default="auto",
     )
@@ -270,7 +264,7 @@ class Media(Cog):
         "video_quality",
         description="The download quality",
         type=str,
-        choices=["auto", "144", "240", "360", "480", "720", "1080", "1440", "2160"],
+        choices=["auto", "144", "240", "360", "480", "720", "1080"],
         default="auto",
         required=False,
     )
@@ -278,8 +272,8 @@ class Media(Cog):
         "audio_format",
         description="The audio format",
         type=str,
-        choices=["best", "mp3", "wav", "opus", "ogg"],
-        default="mp3",
+        choices=["auto", "mp3", "wav", "opus", "ogg"],
+        default="auto",
         required=False,
     )
 
