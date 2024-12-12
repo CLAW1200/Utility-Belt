@@ -1,5 +1,8 @@
 import discord
 import os
+import asyncio
+from functools import partial
+import yt_dlp.version
 from core import Cog, Context, utils
 from PIL import Image, ImageChops
 from tempfile import NamedTemporaryFile
@@ -8,6 +11,7 @@ import json
 from requests.structures import CaseInsensitiveDict
 import datetime
 import yarl
+import yt_dlp
 
 async def image_to_gif(image, url):
     """Convert an image from a URL to a gif and return it as a file path"""
@@ -37,9 +41,68 @@ async def speech_bubble(image, url, overlay_y):
         frame.save(temp_image, format="GIF")
         temp_image.seek(0)
         return discord.File(fp=temp_image.name)
+
+
+async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
+    # Configure yt-dlp options
+    print(video_quality)
+
+    ytdl_options = {
+        "format": "best",
+        "outtmpl": "%(uploader)s - %(title)s.%(ext)s",
+        "quiet": False,
+        "no_warnings": False,
+        "noplaylist": True,
+        "nocheckcertificate": True,
+        "cookiefile": "youtube.cookies",
+    }
+
+    if download_mode == "auto":
+        if video_quality != "auto":
+            ytdl_options["format"] = f"bestvideo[height<={video_quality}]+bestaudio/best[height<={video_quality}]"
+        else:
+            ytdl_options["format"] = f"bestvideo+bestaudio/best"
+        ytdl_options["postprocessors"] = [{
+            "key": "FFmpegVideoConvertor",
+            "preferedformat": "mp4"
+        }]
+    elif download_mode == "audio":
+        ytdl_options["format"] = f"bestaudio/best"
+        ytdl_options["postprocessors"] = [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": audio_format,
+            "preferredquality": "320"
+        }]
+    elif download_mode == "mute":
+        ytdl_options["format"] = f"bestvideo[height<={video_quality}]"
+        ytdl_options["postprocessors"] = [{
+            "key": "FFmpegVideoConvertor",
+            "preferedformat": "mp4"
+        }]
+
+    ytdl = yt_dlp.YoutubeDL(ytdl_options)
+
+    # Run blocking operations in thread pool
+    loop = asyncio.get_event_loop()
+    info = await loop.run_in_executor(
+        None, 
+        partial(ytdl.extract_info, url, download=True)
+    )
     
+    # Get the filepath after post-processing
+    if download_mode == "audio":
+        # For audio, extension will be changed to the requested format
+        filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + f".{audio_format}"
+    else:
+        # For video, extension will be mp4
+        filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + ".mp4"
+
+    return discord.File(fp=filepath)
+
 async def download_media(url, download_mode, video_quality, audio_format):
-    """Download media from a URL"""
+    """Download media from a URL
+        DEPRECATED!!
+    """
 
     api_url = "http://localhost:9000/"
     
@@ -69,9 +132,11 @@ async def download_media(url, download_mode, video_quality, audio_format):
     async with aiohttp.ClientSession() as session:
         async with session.post(api_url, data=data, headers=headers) as response:
             if response.status == 400:
-                raise discord.errors.ApplicationCommandError("## IMPORTANT: If you are having issues with YouTube, please read [this post](https://discord.gg/SpBUGEzmn8)\nBad request.\nCheck if the URL is valid and if the site is supported.\n")
+                cobalt_error_code = json.loads(await response.text())["error"]["code"]
+                raise discord.errors.ApplicationCommandError(f"## IMPORTANT: If you are having issues with YouTube, please read [this post](https://discord.gg/SpBUGEzmn8)\n{cobalt_error_code}\nCheck if the URL is valid and if the site is supported.\n")
             elif response.status == 429:
-                raise discord.errors.ApplicationCommandError("Too many requests.\nTry again later.")
+                cobalt_error_code = json.loads(await response.text())["error"]["code"]
+                raise discord.errors.ApplicationCommandError(f"Too many requests.\nTry again later.\n{cobalt_error_code}")
             elif response.status != 200:
                 response.raise_for_status()
             response_json = await response.json()
@@ -205,8 +270,8 @@ class Media(Cog):
         "video_quality",
         description="The download quality",
         type=str,
-        choices=["best", "144", "240", "360", "480", "720", "1080", "1440", "2160"],
-        default="240",
+        choices=["auto", "144", "240", "360", "480", "720", "1080", "1440", "2160"],
+        default="auto",
         required=False,
     )
     @discord.option(
@@ -226,7 +291,7 @@ class Media(Cog):
         except IndexError:
             url_short = url
         await ctx.respond(content = f"Downloading media from {url_short} {self.bot.get_emojis('loading_emoji')}")
-        file = await download_media(url, format, video_quality, audio_format)
+        file = await download_media_ytdlp(url, format, video_quality, audio_format)
         try:
             await ctx.edit(content = f"", file=file)
         except discord.errors.HTTPException:
@@ -237,8 +302,10 @@ class Media(Cog):
             timestamp = datetime.datetime.now() + datetime.timedelta(days=3)
             timestamp = int(timestamp.timestamp())
             timestamp = str(f"<t:{timestamp}:R>")
-
-            await ctx.edit(content = f"Link expirers in {timestamp} {catbox_link}")
+            if catbox_link is not None:
+                await ctx.edit(content = f"Expiry: {timestamp} {catbox_link}")
+            else:
+                await ctx.edit(content = f"Failed to upload to catbox.moe (file is probably still too big)")
         os.remove(str(file.fp.name))
 
 def setup(bot):
