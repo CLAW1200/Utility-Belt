@@ -63,8 +63,10 @@ async def image_or_url(image, url):
             if url:
                 #Process a link to get the media link from a webpage
                 async with session.get(url) as response:
-                    if response.status != 200:
-                        raise discord.errors.ApplicationCommandError(f"Invalid URL with status code {response.status}")
+                    try:
+                        response.raise_for_status()
+                    except Exception as e:
+                        raise discord.errors.ApplicationCommandError(e)
                     #use beautifulsoup to get parsed html and find the meta tag with the image
                     try:
                         soup = bs(await response.text(), "html.parser")
