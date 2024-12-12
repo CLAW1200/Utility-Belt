@@ -12,6 +12,7 @@ from requests.structures import CaseInsensitiveDict
 import datetime
 import yarl
 import yt_dlp
+import re
 
 async def image_to_gif(image, url):
     """Convert an image from a URL to a gif and return it as a file path"""
@@ -55,6 +56,7 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
         "noplaylist": True,
         "nocheckcertificate": True,
         "cookiefile": "youtube.cookies",
+        "color": "never",
     }
 
     # default options
@@ -76,11 +78,17 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
 
     # Run blocking operations in thread pool
     loop = asyncio.get_event_loop()
-    info = await loop.run_in_executor(
-        None, 
-        partial(ytdl.extract_info, url, download=True)
-    )
-    
+    try:
+        info = await loop.run_in_executor(
+            None, 
+            partial(ytdl.extract_info, url, download=True)
+        )
+    except yt_dlp.DownloadError as e:
+        raise discord.errors.ApplicationCommandError(f"Error: {e}")
+    except yt_dlp.ExtractorError as e:
+        raise discord.errors.ApplicationCommandError(f"Error: {e}")
+
+
     filepath = ytdl.prepare_filename(info)
 
     # # Get the filepath after post-processing
