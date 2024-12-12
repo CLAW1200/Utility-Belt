@@ -5,10 +5,18 @@ import random
 from gradio_client import Client as GradioClient
 import asyncio
 import os
+import requests
 
 def ai_image_gen(prompt, enhancer, img2img, img_seed, img_strength, img_steps): # blocking function
     if prompt == None:
-        prompt = "Joe Biden Falling off a Bike"
+        prompt = "Joe Biden Falling off a Bike"#
+
+    if img2img != None:
+        try:
+            response = requests.get(img2img)
+            response.raise_for_status()
+        except Exception as e:
+            raise discord.errors.ApplicationCommandError(e)
 
     # with aiofiles.open("config/wordblacklist.json", "r") as f:
     #     banned_words = f.read()
