@@ -12,7 +12,6 @@ from requests.structures import CaseInsensitiveDict
 import datetime
 import yarl
 import yt_dlp
-import re
 
 async def image_to_gif(image, url):
     """Convert an image from a URL to a gif and return it as a file path"""
@@ -21,6 +20,14 @@ async def image_to_gif(image, url):
         image.save(temp_gif, format="PNG", save_all=True, append_images=[image])
         temp_gif.seek(0)
         return discord.File(fp=temp_gif.name)
+    
+async def get_user_avatar(user: discord.User):
+    """Get a user's avatar"""
+    user_avatar = user.avatar
+    # resize to 256x256
+    user_avatar = user_avatar.with_size(256)
+    return user_avatar
+
 
 async def speech_bubble(image, url, overlay_y):
     """Add a speech bubble to an image"""
@@ -234,11 +241,13 @@ class Media(Cog):
         required=False,
         default=2
     )
-    async def speech_bubble_command(self, ctx: Context, image: discord.Attachment = None, url: str = None, overlay_y: int = 2):
+    async def speech_bubble_command(self, ctx: Context, image: discord.Attachment = None, url: str = None, user: discord.User = None, overlay_y: int = 2):
         """Add a speech bubble to an image using speech_bubble"""
         await ctx.respond(content = f"Adding speech bubble to image {self.bot.get_emojis('loading_emoji')}")
-        if not image and not url:
+        if not image and not url and not user:
             raise discord.errors.ApplicationCommandError("No image or URL provided")
+        if user != None:
+            image = await get_user_avatar(user)
         if overlay_y <= 0 or overlay_y > 10:
             raise discord.errors.ApplicationCommandError("Overlay y must be between 0 and 10")
         file = await speech_bubble(image, url, overlay_y)
