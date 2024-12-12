@@ -39,7 +39,7 @@ async def speech_bubble(image, url, overlay_y):
     frame = ImageChops.subtract(image, output)
     
     with NamedTemporaryFile(prefix="utilitybelt_",  suffix=".gif", delete=False) as temp_image:
-        frame.save(temp_image, format="GIF")
+        frame.save(temp_image, format="PNG")
         temp_image.seek(0)
         return discord.File(fp=temp_image.name)
 
@@ -51,8 +51,8 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
     ytdl_options = {
         "format": "best",
         "outtmpl": "%(uploader)s - %(title)s.%(ext)s",
-        "quiet": False,
-        "no_warnings": False,
+        "quiet": True,
+        "no_warnings": True,
         "noplaylist": True,
         "nocheckcertificate": True,
         "cookiefile": "youtube.cookies",
@@ -65,7 +65,6 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
     if audio_format == "auto":
         audio_format = "mp3"
 
-    
     if download_mode == "audio":
         ytdl_options["format"] = f"bestaudio[ext={audio_format}]/bestaudio/best"
 
