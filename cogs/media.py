@@ -53,7 +53,6 @@ async def speech_bubble(image, url, overlay_y):
 
 async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
     # Configure yt-dlp options
-    print(video_quality)
 
     ytdl_options = {
         "format": "best",
@@ -62,7 +61,7 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
         "no_warnings": True,
         "noplaylist": True,
         "nocheckcertificate": True,
-        "cookiefile": "youtube.cookies",
+        "cookiefile": ".cookies",
         "color": "never",
     }
 
