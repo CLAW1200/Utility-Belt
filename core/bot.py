@@ -159,7 +159,7 @@ class Bot(commands.Bot):
     def run(
         self, debug: bool = False, cogs: list[str] | None = None, sync: bool = False
     ) -> None:
-        self.load_extensions("jishaku", *cogs or ("cogs", "cogs.developer", "cogs.task"))
+        self.load_extensions("jishaku", *cogs or ("cogs", "cogs.task"))
         if sync:
             async def on_connect() -> None:
                 await self.sync_commands(delete_existing=not debug)
