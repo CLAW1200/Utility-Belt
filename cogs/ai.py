@@ -6,10 +6,18 @@ from gradio_client import Client as GradioClient
 import asyncio
 import os
 import requests
+import json
 
 def ai_image_gen(prompt, enhancer, img2img, img_seed, img_strength, img_steps): # blocking function
     if prompt == None:
-        prompt = "Joe Biden Falling off a Bike"#
+        # read config.json
+        try:
+            with open("config.json", "r") as f:
+                config = f.read()
+                config = json.loads(config)
+                prompt = config["ai_image_default_prompt"]
+        except FileNotFoundError:
+            prompt = "A beautiful landscape with a sunset"
 
     if img2img != None:
         try:
