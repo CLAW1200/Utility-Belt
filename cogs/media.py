@@ -7,10 +7,7 @@ from core import Cog, Context, utils
 from PIL import Image, ImageChops
 from tempfile import NamedTemporaryFile
 import aiohttp
-import json
-from requests.structures import CaseInsensitiveDict
 import datetime
-import yarl
 import yt_dlp
 
 async def image_to_gif(image, url):
@@ -128,64 +125,7 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
     #     filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + ".mp4"
 
     return discord.File(fp=filepath)
-
-async def download_media(url, download_mode, video_quality, audio_format):
-    """Download media from a URL
-        DEPRECATED!!
-    """
-
-    api_url = "http://localhost:9000/"
-    
-    headers = CaseInsensitiveDict()
-    headers["Accept"] = "application/json"
-    headers["Content-Type"] = "application/json"
-
-    data = {
-        "url": url,
-        "filenameStyle": "pretty",
-        "downloadMode" : str(download_mode),
-        "twitterGif": True,
-    }
-    
-    data = json.dumps(data)
-    
-    if format == "audio":
-        data["audioFormat"] = audio_format
-
-    if format == "auto":
-        data["videoQuality"] = video_quality
-        data["audioFormat"] = audio_format
-
-    if format == "mute":
-        data["videoQuality"] = video_quality
-    
-    async with aiohttp.ClientSession() as session:
-        async with session.post(api_url, data=data, headers=headers) as response:
-            if response.status == 400:
-                cobalt_error_code = json.loads(await response.text())["error"]["code"]
-                raise discord.errors.ApplicationCommandError(f"## IMPORTANT: If you are having issues with YouTube, please read [this post](https://discord.gg/SpBUGEzmn8)\n{cobalt_error_code}\nCheck if the URL is valid and if the site is supported.\n")
-            elif response.status == 429:
-                cobalt_error_code = json.loads(await response.text())["error"]["code"]
-                raise discord.errors.ApplicationCommandError(f"Too many requests.\nTry again later.\n{cobalt_error_code}")
-            elif response.status != 200:
-                response.raise_for_status()
-            response_json = await response.json()
-            media_url = response_json.get("url")
-            media_filename = response_json.get("filename")
-            media_url = yarl.URL(media_url, encoded=True)
-    
-        async with session.get(media_url, headers=headers) as media:
-            if media.status != 200:
-                raise media.raise_for_status()
-            media_content = await media.read()
-    
-    with NamedTemporaryFile(delete=False, prefix="utilitybelt_") as temp_media:
-        if media_filename[0] == '"':
-            media_filename = media_filename[1:]
-        temp_media.write(media_content)
-        temp_media.seek(0)
-        return discord.File(fp=temp_media.name, filename=media_filename)
-    
+  
 async def upload_to_catbox(file): # pass a discord.File object
     """Upload media to catbox.moe with curl and return the URL"""
     file_raw = open(file.fp.name, "rb")
