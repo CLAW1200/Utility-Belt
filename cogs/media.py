@@ -56,10 +56,11 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
 
     ytdl_options = {
         "format": "best",
-        "outtmpl": "%(uploader)s - %(title)s.%(ext)s",
+        "outtmpl": "temp/%(uploader)s - %(title)s.%(ext)s",
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
+        "noprogress": True,
         "nocheckcertificate": True,
         "cookiefile": ".cookies",
         "color": "never",
@@ -72,12 +73,23 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
         audio_format = "mp3"
 
     if download_mode == "audio":
-        ytdl_options["format"] = f"bestaudio[ext={audio_format}]/bestaudio/best"
+        ytdl_options["format"] = f"""
+        bestaudio[ext={audio_format}]/
+        bestaudio[acodec=aac]/
+        bestaudio/
+        best
+        """
 
     if download_mode == "auto":
-        ytdl_options["format"] = f"bestvideo[height<={video_quality}]+bestaudio/best[height<={video_quality}]/best"
-
-    # no longer supporting "mute" mode
+        ytdl_options["format"] = f"""
+        bestvideo[vcodec=h264][height<={video_quality}]+bestaudio[acodec=aac]/
+        bestvideo[vcodec=h264][height<={video_quality}]+bestaudio/
+        bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio[ext=webm]/
+        bestvideo[vcodec=vp9][ext=webm][height<={video_quality}]+bestaudio/
+        bestvideo[height<={video_quality}]+bestaudio/
+        bestvideo+bestaudio/
+        best
+        """
 
     ytdl = yt_dlp.YoutubeDL(ytdl_options)
 
@@ -85,9 +97,20 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
     loop = asyncio.get_event_loop()
     try:
         info = await loop.run_in_executor(
-            None, 
-            partial(ytdl.extract_info, url, download=True)
+            None,
+            partial(ytdl.extract_info, url, download=True),
         )
+
+        # print available codecs
+        # for format in info["formats"]:
+        #     format_id = format.get("format_id", "N/A")
+        #     ext = format.get("ext", "N/A") 
+        #     height = format.get("height", "N/A")
+        #     vcodec = format.get("vcodec", "N/A")
+        #     acodec = format.get("acodec", "N/A")
+        #     format_note = format.get("format_note", "N/A")
+        #     print(format_id, ext, height, vcodec, format_note, acodec)
+
     except yt_dlp.DownloadError as e:
         raise discord.errors.ApplicationCommandError(f"Error: {e}")
     except yt_dlp.ExtractorError as e:
