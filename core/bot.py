@@ -20,13 +20,13 @@ class Bot(commands.Bot):
                 message_content=False,
                 guilds=True,
             ),
-            owner_ids=[512609720885051425],
+            owner_ids=[512609720885051425,396252494990409728],
         )
         self.cache: dict[str, dict] = {"example_list": {}}
 
     def get_emojis(self, emoji: str) -> discord.Emoji:
         return getenv(emoji)
-    
+
     async def setup_tortoise(self) -> None:
         await Tortoise.init(
             db_url="sqlite://data/database.db", modules={"models": ["core.models"]}
