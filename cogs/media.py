@@ -61,6 +61,7 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
         "nocheckcertificate": True,
         "cookiefile": ".cookies",
         "color": "never",
+        "trim_file_name": True,
     }
 
     # default options
