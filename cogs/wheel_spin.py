@@ -5,25 +5,44 @@ from tempfile import NamedTemporaryFile
 
 import discord
 from discord.utils import utcnow
-from typing import List
+from typing import List, Dict
 from core import Cog, Context
 from PIL import Image, ImageDraw, ImageFont
 import hashlib
 import random
+import colorsys
 from core import models
 
 
-async def generate_wheel(names: List[str], winner_index: int) -> (discord.File, int):
+async def generate_wheel(names: List[str], winner_index: int,
+                         linked_colours: Dict[str, tuple[int, int, int]] = None) -> (
+        discord.File, int, Dict[str, tuple[int, int, int]]):
     frames = []
     frame_duration = 100
     base_rotations = 4
     speed = 3
     total_rotation = 360 * base_rotations - (
-            (360 / len(names)) * (winner_index + 0.5))  # todo the winner_index is not working proparly here
+            (360 / len(names)) * (winner_index + 0.5))
     spin_time = frame_duration
+
+    if linked_colours is None:
+        colours = {}
+        hue = 0.0
+        step_val = 1.0 / len(names)
+        for name in names:
+            rgb = colorsys.hsv_to_rgb(hue, 1, 1)
+            hue += step_val
+            hue %= 1.0  # cap hue at 1.0
+            r = round(rgb[0] * 255)
+            g = round(rgb[1] * 255)
+            b = round(rgb[2] * 255)
+            colours[name] = (r, g, b)
+    else:
+        colours = linked_colours
+
     for progress in range(0, 100 + speed, speed):
         rotation = int(await bezier_sample(progress / 100.0) * total_rotation)
-        frames.append(await draw_frame(rotation, names))
+        frames.append(await draw_frame(rotation, names, colours))
         spin_time += frame_duration
 
     # export frames to gif
@@ -32,14 +51,14 @@ async def generate_wheel(names: List[str], winner_index: int) -> (discord.File, 
         frame_one.save(temp_image, format="GIF", append_images=frames,
                        save_all=True, duration=frame_duration)
         temp_image.seek(0)
-        return discord.File(fp=temp_image.name), spin_time
+        return discord.File(fp=temp_image.name), spin_time, colours
 
 
 async def bezier_sample(t: float) -> float:  # todo should this ease more
     return t * t * (3 - 2 * t)
 
 
-async def draw_frame(rotation: int, names: List[str]) -> Image:
+async def draw_frame(rotation: int, names: List[str], colours: Dict[str, tuple[int, int, int]]) -> Image:
     frame_size = 1000
     wheel_padding = 30
     text_size = 60
@@ -51,7 +70,7 @@ async def draw_frame(rotation: int, names: List[str]) -> Image:
     for name in names:
         # draw section
         draw.pieslice([wheel_padding, wheel_padding, frame_size - wheel_padding, frame_size - wheel_padding], rotation,
-                      rotation + section_angle, "Blue", "Black",
+                      rotation + section_angle, colours[name], "Black",
                       3)  # todo better color based on name
         # draw name
         x, y, width, height = ImageFont.load_default(size=text_size).getbbox(name)  # todo max name length
@@ -98,19 +117,19 @@ async def draw_frame(rotation: int, names: List[str]) -> Image:
 class ButtonView(discord.ui.View):
 
     def __init__(self, cog: Cog, ctx: Context, names: List[str], winner: int,
-                 members: List[discord.Member] = None) -> None:
+                 linked_colours: Dict[str, tuple[int, int, int]]) -> None:
         super().__init__()
         self.cog = cog
         self.ctx = ctx
         self.names = names
-        self.members = members
         self.winner = winner
+        self.linked_colours = linked_colours
 
     @discord.ui.button(label="Re-spin", style=discord.ButtonStyle.primary)
     async def re_spin_callback(self, button: discord.Button, interaction: discord.Interaction):
         await interaction.response.defer()
         await self.ctx.edit(view=None, content=f"Spinning Wheel {self.cog.bot.get_emojis('loading_emoji')}")
-        await WheelSpin.run(self.cog, self.ctx, self.names, self.members)
+        await WheelSpin.run(self.cog, self.ctx, self.names, self.linked_colours)
 
     @discord.ui.button(label="Spin Remaining", style=discord.ButtonStyle.primary)
     async def remaining_callback(self, button: discord.Button, interaction: discord.Interaction):
@@ -122,9 +141,7 @@ class ButtonView(discord.ui.View):
         await interaction.response.defer()
         await self.ctx.edit(view=None, content=f"Spinning Wheel {self.cog.bot.get_emojis('loading_emoji')}")
         self.names.pop(self.winner)
-        if self.members is not None:
-            self.members.pop(self.winner)
-        await WheelSpin.run(self.cog, self.ctx, self.names, self.members)
+        await WheelSpin.run(self.cog, self.ctx, self.names, self.linked_colours)
 
 
 class WheelSpin(Cog):
@@ -133,40 +150,53 @@ class WheelSpin(Cog):
             discord.IntegrationType.guild_install,
             discord.IntegrationType.user_install,
         },
-        name="spin_wheel",
-        description="Spins a wheel to choose a random user in your call"
+        name="spin-wheel",
+        description="Spins a wheel (if no values present tries to spin the people in your call)"
     )
-    async def spin_wheel_command(self, ctx: Context):
-        active_voice = ctx.author.voice
+    @discord.option(
+        "values",
+        description="values to spin (separated with a space)",
+        type=str,
+        default="",
+        required=False,
+    )
+    async def spin_wheel_command(self, ctx: Context, values: str):
 
-        if active_voice is None:
-            await ctx.respond(content="You need to be in a call to do this", ephemeral=True)
+        # get a list of users if there are no given values
+        if len(values) == 0:
+            active_voice = ctx.author.voice
+            if active_voice is None:
+                await ctx.respond(content="You need to be in a call or give a list of names", ephemeral=True)
+                return
 
-        active_channel = active_voice.channel
-        members = active_channel.members
-        names = []
-        for member in members:
-            if member.nick is None:
-                names.append(member.global_name)
-            else:
-                names.append(member.nick)
+            active_channel = active_voice.channel
+            members = active_channel.members
+            names = []
+            for member in members:
+                if member.nick is None:
+                    names.append(member.global_name)
+                else:
+                    names.append(member.nick)
 
-        # if there is not enough members show error
-        if len(members) <= 1:
-            await ctx.respond(content="You need at least 2 people in your call to user this command", ephemeral=True)
-            return
+            # if there is not enough members show error
+            if len(members) <= 1:
+                await ctx.respond(content="You need at least 2 people in your call to user this command",
+                                  ephemeral=True)
+                return
+        else:
+            names = values.split(" ")
 
         # start the conversation
         await ctx.respond(content=f"Spinning Wheel {self.bot.get_emojis('loading_emoji')}")
 
         # tell the user the wheel is being spun
-        await WheelSpin.run(self, ctx, names, members)
+        await WheelSpin.run(self, ctx, names)
 
-    async def run(self, ctx: Context, names: List[str], members: List[discord.Member] = None):
+    async def run(self, ctx: Context, names: List[str], linked_colours: Dict[str, tuple[int, int, int]] = None):
         # generate result of the wheel
         winner = random.randint(0, len(names) - 1)
 
-        file, spin_time = await generate_wheel(names, winner)
+        file, spin_time, linked_colours = await generate_wheel(names, winner, linked_colours)
 
         await ctx.edit(content="", file=file)
         # remove image
@@ -174,15 +204,8 @@ class WheelSpin(Cog):
 
         # output winner once animation i does
         time.sleep(spin_time / 1000 + 1)  # + buffer to handle it loading the gif at different speeds
-        if members is None:
-            await ctx.edit(content=f"The winner is `{names[winner]}`",
-                           view=ButtonView(self, ctx, names, winner)
-                           )
-        else:
-            await ctx.edit(content=f"The winner is {members[winner].mention}",
-                           view=ButtonView(self, ctx, names, winner, members)
-
-                           )
+        await ctx.edit(content=f"The winner is `{names[winner]}`",
+                       view=ButtonView(self, ctx, names, winner, linked_colours))
 
 
 def setup(bot):
