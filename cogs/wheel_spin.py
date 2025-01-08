@@ -71,9 +71,13 @@ async def draw_frame(rotation: int, names: List[str], colours: Dict[str, tuple[i
         # draw section
         draw.pieslice([wheel_padding, wheel_padding, frame_size - wheel_padding, frame_size - wheel_padding], rotation,
                       rotation + section_angle, colours[name], "Black",
-                      3)  # todo better color based on name
+                      3)
         # draw name
-        x, y, width, height = ImageFont.load_default(size=text_size).getbbox(name)  # todo max name length
+        shown_name = name
+        x, y, width, height = ImageFont.load_default(size=text_size).getbbox(shown_name)
+        while width > (frame_size-wheel_padding) * 0.3:
+            shown_name = shown_name[:-1]
+            x, y, width, height = ImageFont.load_default(size=text_size).getbbox(shown_name)
         name_image = Image.new("RGBA", (width, height))
         name_draw = ImageDraw.Draw(name_image)
         name_draw.text((0, 0), name, fill="black", font_size=text_size)
@@ -193,6 +197,11 @@ class WheelSpin(Cog):
         await WheelSpin.run(self, ctx, names)
 
     async def run(self, ctx: Context, names: List[str], linked_colours: Dict[str, tuple[int, int, int]] = None):
+        # make sure there are no more than 9 names
+        print(len(names))
+        if len(names) > 9:
+            names = names[0:8]
+            await ctx.respond(content="You can have a maximum of 9 names in the wheel", ephemeral=True)
         # generate result of the wheel
         winner = random.randint(0, len(names) - 1)
 
@@ -202,7 +211,7 @@ class WheelSpin(Cog):
         # remove image
         os.remove(file.fp.name)
 
-        # output winner once animation i does
+        # output winner once animation is does
         time.sleep(spin_time / 1000 + 1)  # + buffer to handle it loading the gif at different speeds
         await ctx.edit(content=f"The winner is `{names[winner]}`",
                        view=ButtonView(self, ctx, names, winner, linked_colours))
