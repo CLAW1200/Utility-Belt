@@ -11,14 +11,12 @@ import random
 import colorsys
 
 
-async def generate_wheel(names: List[str], winner_index: int,
-                         linked_colours: Dict[str, tuple[int, int, int]] = None) -> (
-        discord.File, int, Dict[str, tuple[int, int, int]]):
+async def generate_wheel(names: List[str], winner_index: int,linked_colours: Dict[str, tuple[int, int, int]] = None) -> (discord.File, int, Dict[str, tuple[int, int, int]]):
     # gif config
     frames = []
-    frame_duration = 100
-    base_rotations = 4
-    speed = 3
+    frame_duration = 50
+    base_rotations = 6
+    speed = 2
 
     total_rotation = 360 * base_rotations - (
             (360 / len(names)) * (winner_index + min(max(0.05, random.random()), 0.95)))
@@ -29,7 +27,8 @@ async def generate_wheel(names: List[str], winner_index: int,
         hue = 0.0
         step_val = 1.0 / len(names)
         for name in names:
-            rgb = colorsys.hsv_to_rgb(hue, 1, 1)
+            # Modified HSV values for pastel colors
+            rgb = colorsys.hsv_to_rgb(hue, 0.45, 1.0)  # Lower saturation, higher brightness
             hue += step_val
             hue %= 1.0  # cap hue at 1.0
             r = round(rgb[0] * 255)
@@ -52,16 +51,14 @@ async def generate_wheel(names: List[str], winner_index: int,
         temp_image.seek(0)
         return discord.File(fp=temp_image.name), spin_time, colours
 
-
 async def bezier_sample(t: float) -> float:
     return t * t * (3 - 2 * t)
-
 
 async def draw_frame(rotation: int, names: List[str], colours: Dict[str, tuple[int, int, int]]) -> Image:
     # frame config
     frame_size = 1000
     wheel_padding = 30
-    text_size = 60
+    text_size = 80
     section_angle = 360 / len(names)
 
     # create empty background
@@ -76,7 +73,7 @@ async def draw_frame(rotation: int, names: List[str], colours: Dict[str, tuple[i
         # draw name
         shown_name = name
         x, y, width, height = ImageFont.load_default(size=text_size).getbbox(shown_name)
-        while width > (frame_size - wheel_padding) * 0.3:
+        while width > (frame_size - wheel_padding) * 0.35:
             shown_name = shown_name[:-1]
             x, y, width, height = ImageFont.load_default(size=text_size).getbbox(shown_name)
         name_image = Image.new("RGBA", (width, height))
@@ -115,7 +112,6 @@ async def draw_frame(rotation: int, names: List[str], colours: Dict[str, tuple[i
     # draw marker triangle
     draw.regular_polygon(((frame_size - wheel_padding, frame_size / 2), wheel_padding), 3, 90,
                          "black")
-
     return image
 
 
@@ -150,6 +146,9 @@ class ButtonView(discord.ui.View):
 
 
 class WheelSpin(Cog):
+    """
+    Wheel spin command
+    """
     @discord.slash_command(
         integration_types={
             discord.IntegrationType.guild_install,
