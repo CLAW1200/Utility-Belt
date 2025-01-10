@@ -4,25 +4,24 @@ import time
 from tempfile import NamedTemporaryFile
 
 import discord
-from discord.utils import utcnow
 from typing import List, Dict
 from core import Cog, Context
 from PIL import Image, ImageDraw, ImageFont
-import hashlib
 import random
 import colorsys
-from core import models
 
 
 async def generate_wheel(names: List[str], winner_index: int,
                          linked_colours: Dict[str, tuple[int, int, int]] = None) -> (
         discord.File, int, Dict[str, tuple[int, int, int]]):
+    # gif config
     frames = []
     frame_duration = 100
     base_rotations = 4
     speed = 3
+
     total_rotation = 360 * base_rotations - (
-            (360 / len(names)) * (winner_index + 0.5))
+            (360 / len(names)) * (winner_index + min(max(0.05, random.random()), 0.95)))
     spin_time = frame_duration
 
     if linked_colours is None:
@@ -54,15 +53,17 @@ async def generate_wheel(names: List[str], winner_index: int,
         return discord.File(fp=temp_image.name), spin_time, colours
 
 
-async def bezier_sample(t: float) -> float:  # todo should this ease more
+async def bezier_sample(t: float) -> float:
     return t * t * (3 - 2 * t)
 
 
 async def draw_frame(rotation: int, names: List[str], colours: Dict[str, tuple[int, int, int]]) -> Image:
+    # frame config
     frame_size = 1000
     wheel_padding = 30
     text_size = 60
     section_angle = 360 / len(names)
+
     # create empty background
     image = Image.new("RGBA", (frame_size, frame_size))
     draw = ImageDraw.Draw(image)
@@ -75,7 +76,7 @@ async def draw_frame(rotation: int, names: List[str], colours: Dict[str, tuple[i
         # draw name
         shown_name = name
         x, y, width, height = ImageFont.load_default(size=text_size).getbbox(shown_name)
-        while width > (frame_size-wheel_padding) * 0.3:
+        while width > (frame_size - wheel_padding) * 0.3:
             shown_name = shown_name[:-1]
             x, y, width, height = ImageFont.load_default(size=text_size).getbbox(shown_name)
         name_image = Image.new("RGBA", (width, height))
@@ -198,7 +199,6 @@ class WheelSpin(Cog):
 
     async def run(self, ctx: Context, names: List[str], linked_colours: Dict[str, tuple[int, int, int]] = None):
         # make sure there are no more than 9 names
-        print(len(names))
         if len(names) > 9:
             names = names[0:8]
             await ctx.respond(content="You can have a maximum of 9 names in the wheel", ephemeral=True)
