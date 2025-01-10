@@ -20,7 +20,7 @@ class Bot(commands.Bot):
                 message_content=False,
                 guilds=True,
             ),
-            owner_ids=[512609720885051425,396252494990409728],
+            owner_ids=[512609720885051425],
         )
         self.cache: dict[str, dict] = {"example_list": {}}
 
