@@ -26,7 +26,7 @@ class Bot(commands.Bot):
 
     def get_emojis(self, emoji: str) -> discord.Emoji:
         return getenv(emoji)
-    
+
     async def setup_tortoise(self) -> None:
         await Tortoise.init(
             db_url="sqlite://data/database.db", modules={"models": ["core.models"]}
