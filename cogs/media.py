@@ -49,11 +49,10 @@ async def speech_bubble(image, url, overlay_y):
 
 
 async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
-    # Configure yt-dlp options
 
     ytdl_options = {
         "format": "best",
-        "outtmpl": "temp/%(uploader)s - %(title)s.%(ext)s",
+        "outtmpl": "temp/%(uploader)s - %(title).150B.%(ext)s", # limit title to 150 bytes
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
@@ -61,12 +60,11 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
         "nocheckcertificate": True,
         "cookiefile": ".cookies",
         "color": "never",
-        "trim_file_name": True,
     }
 
     # default options
     if video_quality == "auto":
-        video_quality = "360"
+        video_quality = "480"
     if audio_format == "auto":
         audio_format = "mp3"
 
@@ -117,13 +115,7 @@ async def download_media_ytdlp(url, download_mode, video_quality, audio_format):
 
     filepath = ytdl.prepare_filename(info)
 
-    # # Get the filepath after post-processing
-    # if download_mode == "audio":
-    #     # For audio, extension will be changed to the requested format
-    #     filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + f".{audio_format}"
-    # else:
-    #     # For video, extension will be mp4
-    #     filepath = ytdl.prepare_filename(info).rsplit(".", 1)[0] + ".mp4"
+    print (filepath)
 
     return discord.File(fp=filepath)
   
